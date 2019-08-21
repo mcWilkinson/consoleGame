@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      .big-potato {
+        background: grey;
+        color: white;
+        height: 500px;
+        width: 90%;
+        margin: 0px;
+        padding: 5px;
+        border: none;
+      }
+      .small-potato {
+        background: grey;
+        color: white;
+        height: 50px;
+        width: 90%;
+        margin: 0px;
+        padding: 5px;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+    </div>
+    <script type="text/javascript">
+      var ctx;
+      var canvas;
+
+      var initialize_canvas = function() {
+        canvas = document.createElement("canvas");
+        ctx = canvas.getContext("2d");
+
+        canvas.width = 1024;
+        canvas.height = 480;
+        document.body.appendChild(canvas);
+      }
+
+      addEventListener("keyup", function(e) {
+        switch(e.keyCode) {
+          case 8: // Backspace
+            console.log("Backspace")
+            user_input = user_input.substring(0, user_input.length - 1);
+            break;
+          case 13: // Enter
+            console.log("Enter");
+            console.log(user_input);
+
+            current_line = display_lines.push(user_input) - 1;
+            console.log(display_lines)
+
+            user_input = "";
+
+            break;
+          case 16: // Shift
+            break;
+          case 27: // Escape
+            console.log("Escape");
+
+            break;
+          case 37: // Left Arrow
+            break;
+          case 38: // Up Arrow
+            if(current_line > 0) {
+              current_line--;
+            }
+            break;
+          case 39: // Right Arrow
+            break;
+          case 40: // Down Arrow
+            current_line++;
+            break;
+          default:
+            user_input += e.key
+        }
+        last_key_released = e.keyCode;
+      });
+
+      var update = function() {
+        if(last_key_released == "27") {
+          console.log("Die")
+        }
+      }
+
+      var render = function() {
+        ctx.fillStyle = "rgb(0,0,0)"
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+
+
+        ctx.fillStyle = "rgb(167, 232, 143)";
+      	ctx.font = "24px Helvetica";
+      	ctx.textAlign = "left";
+      	ctx.textBaseline = "top";
+        ctx.fillText("Testing last key_released " + last_key_released, 32, 32);
+        ctx.fillText(" > " + user_input, 32, canvas.height - 32);
+
+        for(var i = 0; i < 10; i++) {
+          var display_text = display_lines[current_line - i];
+          if(display_text == undefined) {
+            display_text = "";
+          }
+          ctx.fillText(display_text, 32, canvas.height - 64 - i*32);
+        }
+      }
+
+      function gameLoop () {
+      	render();
+        requestAnimationFrame(gameLoop)
+      }
+
+      var display_lines = [];
+      var current_line = 0;
+      var user_input = "";
+      var last_key_pressed;
+      var last_key_released;
+
+      var w = window;
+      requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame || w.msRequestAnimationFrame || w.mozRequestAnimationFrame;
+
+      initialize_canvas();
+      gameLoop();
+    </script>
+  </body>
+</html>
