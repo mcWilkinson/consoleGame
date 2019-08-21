@@ -2,23 +2,8 @@
 <html>
   <head>
     <style>
-      .big-potato {
-        background: grey;
-        color: white;
-        height: 500px;
-        width: 90%;
-        margin: 0px;
-        padding: 5px;
-        border: none;
-      }
-      .small-potato {
-        background: grey;
-        color: white;
-        height: 50px;
-        width: 90%;
-        margin: 0px;
-        padding: 5px;
-        border: none;
+      html {
+        background: black;
       }
     </style>
   </head>
@@ -29,12 +14,12 @@
       var ctx;
       var canvas;
 
-      var initialize_canvas = function() {
+      var initializeCanvas = function() {
         canvas = document.createElement("canvas");
         ctx = canvas.getContext("2d");
 
         canvas.width = 1024;
-        canvas.height = 480;
+        canvas.height = 1024;
         document.body.appendChild(canvas);
       }
 
@@ -48,17 +33,23 @@
             console.log("Enter");
             console.log(user_input);
 
-            current_line = display_lines.push(user_input) - 1;
+            addLine("> " + user_input);
             console.log(display_lines)
+
+            evaluateUserInput(user_input);
 
             user_input = "";
 
             break;
           case 16: // Shift
-            break;
+          case 17: // Ctrl
+          case 18: // Alt
+          case 20: // Caps Lock
           case 27: // Escape
-            console.log("Escape");
-
+          case 33: // Page Up
+          case 34: // Page Down
+          case 35: // Home
+          case 36: // End
             break;
           case 37: // Left Arrow
             break;
@@ -72,6 +63,13 @@
           case 40: // Down Arrow
             current_line++;
             break;
+          case 45: // Insert
+          case 46: // Delete
+            break;
+          case 91: // OS key
+            break;
+          case 93: // Context Menu
+            break;
           default:
             user_input += e.key
         }
@@ -84,42 +82,139 @@
         }
       }
 
-      var render = function() {
-        ctx.fillStyle = "rgb(0,0,0)"
+      var evaluateUserInput = function(input) {
+        console.log("You typed: \"" + input + "\"");
+        switch(input) {
+          case "help":
+          case "h":
+            addLines([
+              "------------------------",
+              "Welcome to my website!",
+              "",
+              "Here are some commands you can use!",
+              "",
+              "'h'    => alias for 'help'",
+              "'help' => show this page",
+              "------------------------"
+            ])
+            break;
+          default:
+            addLine("'" + input + "' is not a valid command")
+            break;
+        }
+      }
+
+      var addLine = function(line) {
+        current_line = display_lines.push(line) - 1;
+      }
+
+      var addLines = function(lines) {
+        for(var i = 0; i < lines.length; i++) {
+          addLine(lines[i]);
+        }
+      }
+
+      var registerAndLoadImage = function(identifier, url) {
+        images[identifier] = new Image();
+        images[identifier].onload = function() {
+          images[identifier].ready = true;
+        }
+        images[identifier].src = url;
+      }
+
+      var initializeImages = function() {
+        registerAndLoadImage("crt_screen","https://i.imgur.com/TAJ0Zkw.png")
+      }
+
+      var registerRenderEvent = function(ev) {
+        render_events.push(ev)
+      }
+
+      var processRenderEvents = function(timestamp) {
+        for(var i=0; i < render_events.length; i++) {
+          render_events[i](timestamp)
+        }
+      }
+
+      var initializeRenderEvents = function() {
+        registerRenderEvent(renderText);
+        registerRenderEvent(renderCRT);
+      }
+
+      var getCursor = function(timestamp) {
+        var blink_delay = 500
+        if(timestamp%(blink_delay*2) > blink_delay) {
+          return "_"
+        } else {
+          return ""
+        }
+      }
+
+      var clearConsole = function() {
+        // ctx.fillStyle = "rgb(0,0,0)"
+        ctx.fillStyle = "rgb(17, 23, 15)"
+        // ctx.fillStyle = "rgb(255,255,255)"
         ctx.fillRect(0,0,canvas.width, canvas.height);
+      }
 
+      var renderCRT = function(timestamp) {
+        ctx.filter = undefined;
+        ctx.drawImage(images["crt_screen"], 0, 0, canvas.width, canvas.height)
+      }
 
+      var renderText = function(timestamp) {
+        if(enable_blur) {
+          ctx.filter = 'blur(1px)'
+        }
         ctx.fillStyle = "rgb(167, 232, 143)";
-      	ctx.font = "24px Helvetica";
+      	ctx.font = "24px Consolas";
       	ctx.textAlign = "left";
       	ctx.textBaseline = "top";
-        ctx.fillText("Testing last key_released " + last_key_released, 32, 32);
-        ctx.fillText(" > " + user_input, 32, canvas.height - 32);
 
-        for(var i = 0; i < 10; i++) {
+        var line_height = 32;
+        var offset = line_height * 2 + 8;
+        var available_lines = Math.floor((canvas.height - offset) / line_height)
+
+        ctx.fillText("Testing last key_released " + last_key_released, 32, 32);
+        ctx.fillText("> " + user_input + getCursor(timestamp), 32, canvas.height - line_height - 8);
+
+        for(var i = 0; i < available_lines; i++) {
           var display_text = display_lines[current_line - i];
           if(display_text == undefined) {
             display_text = "";
           }
-          ctx.fillText(display_text, 32, canvas.height - 64 - i*32);
+          ctx.fillText(display_text, 32, canvas.height - offset - i*32);
         }
       }
 
-      function gameLoop () {
-      	render();
+      var render = function(timestamp) {
+        clearConsole();
+        processRenderEvents(timestamp);
+      }
+
+      function gameLoop() {
+        current_time = Date.now();
+      	render(current_time);
         requestAnimationFrame(gameLoop)
       }
 
-      var display_lines = [];
-      var current_line = 0;
+      var display_lines = ["Welcome!", "Try typing 'help' if you need help!"];
+      var current_line = display_lines.length - 1;
       var user_input = "";
       var last_key_pressed;
       var last_key_released;
+      var current_time;
+      var previous_time;
+      var render_events = [];
+      var images = {};
+      var enable_blur = true;
 
       var w = window;
       requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame || w.msRequestAnimationFrame || w.mozRequestAnimationFrame;
 
-      initialize_canvas();
+      initializeCanvas();
+      initializeImages();
+      initializeRenderEvents();
       gameLoop();
     </script>
   </body>
